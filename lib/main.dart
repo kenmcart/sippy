@@ -3,22 +3,30 @@ import 'package:provider/provider.dart';
 import 'screens/main_screen.dart';
 import 'providers/cocktail_provider.dart';
 import 'providers/favorites_provider.dart';
+import 'providers/settings_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   final favoritesProvider = FavoritesProvider();
   await favoritesProvider.init();
+  final settingsProvider = SettingsProvider();
+  await settingsProvider.init();
   
-  runApp(MyApp(favoritesProvider: favoritesProvider));
+  runApp(MyApp(
+    favoritesProvider: favoritesProvider,
+    settingsProvider: settingsProvider,
+  ));
 }
 
 class MyApp extends StatelessWidget {
   final FavoritesProvider favoritesProvider;
+  final SettingsProvider settingsProvider;
   
   const MyApp({
     super.key,
     required this.favoritesProvider,
+    required this.settingsProvider,
   });
 
   @override
@@ -27,30 +35,47 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => CocktailProvider()),
         ChangeNotifierProvider.value(value: favoritesProvider),
+        ChangeNotifierProvider.value(value: settingsProvider),
       ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Sippy',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.purple,
-            brightness: Brightness.light,
-          ),
-          useMaterial3: true,
-          appBarTheme: const AppBarTheme(
-            centerTitle: true,
-            elevation: 0,
-          ),
-        ),
-        builder: (context, child) {
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: child!,
+      child: Consumer<SettingsProvider>(
+        builder: (context, settings, _) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'Sippy',
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.purple,
+                brightness: Brightness.light,
+              ),
+              useMaterial3: true,
+              appBarTheme: const AppBarTheme(
+                centerTitle: true,
+                elevation: 0,
+              ),
             ),
+            darkTheme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.purple,
+                brightness: Brightness.dark,
+              ),
+              useMaterial3: true,
+              appBarTheme: const AppBarTheme(
+                centerTitle: true,
+                elevation: 0,
+              ),
+            ),
+            themeMode: settings.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            builder: (context, child) {
+              return Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: child!,
+                ),
+              );
+            },
+            home: const MainScreen(),
           );
         },
-        home: const MainScreen(),
       ),
     );
   }

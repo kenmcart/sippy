@@ -17,6 +17,20 @@ class _FilterDrawerState extends State<FilterDrawer> {
   int? maxIngredients;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Load current filter state from provider
+    final cocktailProvider = Provider.of<CocktailProvider>(context, listen: false);
+    setState(() {
+      selectedSkill = cocktailProvider.skillFilter;
+      selectedType = cocktailProvider.typeFilter;
+      selectedPotency = cocktailProvider.potencyFilter;
+      selectedMood = cocktailProvider.moodFilter;
+      maxIngredients = cocktailProvider.maxIngredients;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cocktailProvider = Provider.of<CocktailProvider>(context);
     final categories = cocktailProvider.categories;
@@ -78,7 +92,7 @@ class _FilterDrawerState extends State<FilterDrawer> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
-                cocktailProvider.filterCocktails(
+                cocktailProvider.applyFilters(
                   maxIngredients: maxIngredients,
                   skill: selectedSkill,
                   type: selectedType,
@@ -98,6 +112,7 @@ class _FilterDrawerState extends State<FilterDrawer> {
                   selectedMood = null;
                   maxIngredients = null;
                 });
+                cocktailProvider.clearFilters();
               },
               child: const Text('Clear All'),
             ),

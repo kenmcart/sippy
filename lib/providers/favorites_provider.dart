@@ -8,6 +8,13 @@ class FavoritesProvider with ChangeNotifier {
 
   Set<String> get favorites => _favorites;
   Map<String, double> get ratings => _ratings;
+  int get favoritesCount => _favorites.length;
+  int get ratedCount => _ratings.length;
+  double get averageRating {
+    if (_ratings.isEmpty) return 0.0;
+    final total = _ratings.values.fold<double>(0.0, (sum, r) => sum + r);
+    return total / _ratings.length;
+  }
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
@@ -49,4 +56,20 @@ class FavoritesProvider with ChangeNotifier {
   bool isFavorite(String cocktailId) => _favorites.contains(cocktailId);
   
   double getRating(String cocktailId) => _ratings[cocktailId] ?? 0.0;
+
+  Future<void> clearFavorites() async {
+    _favorites.clear();
+    await _prefs.setStringList('favorites', _favorites.toList());
+    notifyListeners();
+  }
+
+  Future<void> clearRatings() async {
+    // Remove stored rating_* keys
+    final keys = _prefs.getKeys().where((k) => k.startsWith('rating_')).toList();
+    for (final key in keys) {
+      await _prefs.remove(key);
+    }
+    _ratings.clear();
+    notifyListeners();
+  }
 }

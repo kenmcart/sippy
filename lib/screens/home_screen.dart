@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/cocktail_provider.dart';
 import '../widgets/cocktail_card.dart';
 import '../widgets/filter_drawer.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,6 +13,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   @override
   void initState() {
     super.initState();
@@ -28,15 +30,19 @@ class _HomeScreenState extends State<HomeScreen> {
         final cocktails = cocktailProvider.cocktails;
         
         return Scaffold(
+          key: _scaffoldKey,
           appBar: AppBar(
             title: const Text('Sippy'),
             actions: [
               IconButton(
-                icon: const Icon(Icons.filter_list),
+                icon: const Icon(Icons.person),
+                tooltip: 'Profile',
                 onPressed: () {
-                  Scaffold.of(context).openEndDrawer();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                  );
                 },
-              ),
+              )
             ],
           ),
           endDrawer: const FilterDrawer(),
@@ -52,6 +58,11 @@ class _HomeScreenState extends State<HomeScreen> {
             itemBuilder: (context, index) {
               return CocktailCard(cocktail: cocktails[index]);
             },
+          ),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+            icon: const Icon(Icons.filter_list),
+            label: const Text('Filters'),
           ),
         );
       },

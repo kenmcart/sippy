@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 class CocktailProvider with ChangeNotifier {
   List<Map<String, dynamic>> _cocktails = [];
+  List<Map<String, dynamic>> _filteredCocktails = [];
   Map<String, List<String>> _categories = {
     'skill': ['beginner', 'intermediate', 'expert'],
     'type': ['fruity', 'tart', 'sweet', 'bitter', 'savory'],
@@ -9,8 +10,30 @@ class CocktailProvider with ChangeNotifier {
     'mood': ['breakfast', 'brunch', 'lunch', 'dinner', 'party', 'relaxing'],
   };
 
-  List<Map<String, dynamic>> get cocktails => _cocktails;
+  // Active filters
+  int? _maxIngredients;
+  String? _skillFilter;
+  String? _typeFilter;
+  String? _potencyFilter;
+  String? _moodFilter;
+
+  List<Map<String, dynamic>> get cocktails => _filteredCocktails.isEmpty && !_hasActiveFilters() ? _cocktails : _filteredCocktails;
   Map<String, List<String>> get categories => _categories;
+  
+  // Getters for current filter state
+  int? get maxIngredients => _maxIngredients;
+  String? get skillFilter => _skillFilter;
+  String? get typeFilter => _typeFilter;
+  String? get potencyFilter => _potencyFilter;
+  String? get moodFilter => _moodFilter;
+
+  bool _hasActiveFilters() {
+    return _maxIngredients != null ||
+           _skillFilter != null ||
+           _typeFilter != null ||
+           _potencyFilter != null ||
+           _moodFilter != null;
+  }
 
   Future<void> fetchCocktails() async {
     _cocktails = [
@@ -100,7 +123,7 @@ class CocktailProvider with ChangeNotifier {
         'type': 'fruity',
         'potency': 'non-alcoholic',
         'mood': ['breakfast', 'brunch'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/2x8thr1504816928.jpg',
+        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/trptts1454514474.jpg',
       },
       {
         'id': '9',
@@ -144,7 +167,7 @@ class CocktailProvider with ChangeNotifier {
         'type': 'bitter',
         'potency': 'strong',
         'mood': ['evening', 'dinner'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/ec2jtz1604350429.jpg',
+        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/yk70e31606771240.jpg',
       },
       {
         'id': '13',
@@ -166,7 +189,7 @@ class CocktailProvider with ChangeNotifier {
         'type': 'tart',
         'potency': 'medium',
         'mood': ['evening', 'dinner'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/7tg0ol1582474173.jpg',
+        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/hbkfsh1589574990.jpg',
       },
       {
         'id': '15',
@@ -177,7 +200,7 @@ class CocktailProvider with ChangeNotifier {
         'type': 'tart',
         'potency': 'medium',
         'mood': ['party', 'summer'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/qrqywr1504813256.jpg',
+        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/samm5j1513706393.jpg',
       },
       {
         'id': '16',
@@ -188,7 +211,7 @@ class CocktailProvider with ChangeNotifier {
         'type': 'bitter',
         'potency': 'strong',
         'mood': ['evening'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/vvpxwy1439908412.jpg',
+        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/gjc5f91504374990.jpg',
       },
       {
         'id': '17',
@@ -199,7 +222,7 @@ class CocktailProvider with ChangeNotifier {
         'type': 'tart',
         'potency': 'light',
         'mood': ['lunch', 'summer'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/7cll921606854636.jpg',
+        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/qystvv1439907682.jpg',
       },
       {
         'id': '18',
@@ -221,7 +244,7 @@ class CocktailProvider with ChangeNotifier {
         'type': 'sparkling',
         'potency': 'light',
         'mood': ['celebration', 'brunch'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/hrxfbl1606773105.jpg',
+        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/zwzpxw1504374734.jpg',
       },
       {
         'id': '20',
@@ -232,7 +255,7 @@ class CocktailProvider with ChangeNotifier {
         'type': 'spicy',
         'potency': 'medium',
         'mood': ['party', 'dinner'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/2fxjma1606772717.jpg',
+        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/t1tn0s1504374905.jpg',
       },
       {
         'id': '21',
@@ -243,7 +266,7 @@ class CocktailProvider with ChangeNotifier {
         'type': 'bitter',
         'potency': 'light',
         'mood': ['summer', 'aperitif'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/sttghy1606774476.jpg',
+        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/iloasq1587661955.jpg',
       },
       {
         'id': '22',
@@ -265,7 +288,7 @@ class CocktailProvider with ChangeNotifier {
         'type': 'dry',
         'potency': 'strong',
         'mood': ['evening', 'elegant'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/6pz5n91504560177.jpg',
+        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/mtdxpa1504374514.jpg',
       },
       {
         'id': '24',
@@ -276,7 +299,7 @@ class CocktailProvider with ChangeNotifier {
         'type': 'tart',
         'potency': 'medium',
         'mood': ['lunch', 'summer'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/3a15gf1582475640.jpg',
+        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/vzrbz71504372682.jpg',
       },
       {
         'id': '25',
@@ -287,7 +310,7 @@ class CocktailProvider with ChangeNotifier {
         'type': 'bitter',
         'potency': 'strong',
         'mood': ['evening'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/tvtxuq1472668466.jpg',
+        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/km84qi1513705868.jpg',
       },
       {
         'id': '26',
@@ -298,7 +321,7 @@ class CocktailProvider with ChangeNotifier {
         'type': 'fruity',
         'potency': 'medium',
         'mood': ['evening', 'summer'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/tqqpsq1439907310.jpg',
+        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/5jhd4p1582482382.jpg',
       },
       {
         'id': '27',
@@ -309,7 +332,7 @@ class CocktailProvider with ChangeNotifier {
         'type': 'frothy',
         'potency': 'light',
         'mood': ['brunch', 'special'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/5wpv1619080263.jpg',
+        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/967t911643844053.jpg',
       },
       {
         'id': '28',
@@ -320,7 +343,7 @@ class CocktailProvider with ChangeNotifier {
         'type': 'herbal',
         'potency': 'strong',
         'mood': ['summer', 'party'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/srsrrs1483387096.jpg',
+        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/squyyq1439907312.jpg',
       },
       {
         'id': '29',
@@ -331,7 +354,7 @@ class CocktailProvider with ChangeNotifier {
         'type': 'fruity',
         'potency': 'medium',
         'mood': ['party', 'summer'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/yzva7x1504889928.jpg',
+        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/fi67x01504374956.jpg',
       },
       {
         'id': '30',
@@ -345,6 +368,59 @@ class CocktailProvider with ChangeNotifier {
         'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/wx7hsg1504370510.jpg',
       },
     ];
+    _filteredCocktails = _cocktails; // Initialize filtered list
+    notifyListeners();
+  }
+
+  void applyFilters({
+    int? maxIngredients,
+    String? skill,
+    String? type,
+    String? potency,
+    String? mood,
+  }) {
+    _maxIngredients = maxIngredients;
+    _skillFilter = skill;
+    _typeFilter = type;
+    _potencyFilter = potency;
+    _moodFilter = mood;
+
+    _filteredCocktails = _cocktails.where((cocktail) {
+      bool matches = true;
+      
+      if (maxIngredients != null) {
+        matches &= cocktail['ingredients'].length <= maxIngredients;
+      }
+      
+      if (skill != null) {
+        matches &= cocktail['skill'] == skill;
+      }
+      
+      if (type != null) {
+        matches &= cocktail['type'] == type;
+      }
+      
+      if (potency != null) {
+        matches &= cocktail['potency'] == potency;
+      }
+      
+      if (mood != null) {
+        matches &= cocktail['mood'].contains(mood);
+      }
+      
+      return matches;
+    }).toList();
+
+    notifyListeners();
+  }
+
+  void clearFilters() {
+    _maxIngredients = null;
+    _skillFilter = null;
+    _typeFilter = null;
+    _potencyFilter = null;
+    _moodFilter = null;
+    _filteredCocktails = _cocktails;
     notifyListeners();
   }
 

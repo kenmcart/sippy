@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/cocktail_provider.dart';
 import '../providers/favorites_provider.dart';
 import '../widgets/cocktail_card.dart';
+import 'profile_screen.dart';
 
 class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
@@ -14,6 +15,17 @@ class FavoritesScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('My Collection'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.person),
+              tooltip: 'Profile',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+              },
+            )
+          ],
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Favorites'),
