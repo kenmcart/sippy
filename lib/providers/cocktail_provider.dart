@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class CocktailProvider with ChangeNotifier {
   List<Map<String, dynamic>> _cocktails = [];
@@ -16,6 +18,11 @@ class CocktailProvider with ChangeNotifier {
   String? _typeFilter;
   String? _potencyFilter;
   String? _moodFilter;
+
+  // Flag to skip remote loading (useful for testing)
+  final bool skipRemoteLoad;
+
+  CocktailProvider({this.skipRemoteLoad = false});
 
   List<Map<String, dynamic>> get cocktails => _filteredCocktails.isEmpty && !_hasActiveFilters() ? _cocktails : _filteredCocktails;
   Map<String, List<String>> get categories => _categories;
@@ -202,17 +209,7 @@ class CocktailProvider with ChangeNotifier {
         'mood': ['party', 'summer'],
         'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/samm5j1513706393.jpg',
       },
-      {
-        'id': '16',
-        'name': 'Sazerac',
-        'ingredients': ['Rye whiskey (2 oz)', 'Absinthe rinse', 'Sugar cube', 'Peychaud\'s bitters (3 dashes)', 'Lemon peel'],
-        'recipe': '1. Rinse chilled glass with absinthe and discard excess\n2. Muddle sugar with bitters, add whiskey and ice\n3. Stir and strain into prepared glass\n4. Express lemon peel',
-        'skill': 'expert',
-        'type': 'bitter',
-        'potency': 'strong',
-        'mood': ['evening'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/gjc5f91504374990.jpg',
-      },
+      
       {
         'id': '17',
         'name': 'Tom Collins',
@@ -235,17 +232,7 @@ class CocktailProvider with ChangeNotifier {
         'mood': ['brunch', 'dinner'],
         'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/loezxn1504373874.jpg',
       },
-      {
-        'id': '19',
-        'name': 'French 75',
-        'ingredients': ['Gin (1 oz)', 'Fresh lemon juice (0.5 oz)', 'Simple syrup (0.5 oz)', 'Champagne (top up)'],
-        'recipe': '1. Shake gin, lemon and syrup with ice\n2. Strain into flute and top with champagne\n3. Garnish with lemon twist',
-        'skill': 'intermediate',
-        'type': 'sparkling',
-        'potency': 'light',
-        'mood': ['celebration', 'brunch'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/zwzpxw1504374734.jpg',
-      },
+      
       {
         'id': '20',
         'name': 'Dark \u0027n\u0027 Stormy',
@@ -290,17 +277,7 @@ class CocktailProvider with ChangeNotifier {
         'mood': ['evening', 'elegant'],
         'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/mtdxpa1504374514.jpg',
       },
-      {
-        'id': '24',
-        'name': 'Gimlet',
-        'ingredients': ['Gin (2 oz)', 'Fresh lime juice (0.75 oz)', 'Simple syrup (0.5 oz)'],
-        'recipe': '1. Shake ingredients with ice\n2. Strain into chilled coupe\n3. Garnish with lime wheel',
-        'skill': 'beginner',
-        'type': 'tart',
-        'potency': 'medium',
-        'mood': ['lunch', 'summer'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/vzrbz71504372682.jpg',
-      },
+      
       {
         'id': '25',
         'name': 'Boulevardier',
@@ -312,17 +289,7 @@ class CocktailProvider with ChangeNotifier {
         'mood': ['evening'],
         'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/km84qi1513705868.jpg',
       },
-      {
-        'id': '26',
-        'name': 'Bramble',
-  'ingredients': ['Gin (2 oz)', 'Fresh lemon juice (0.75 oz)', 'Simple syrup (0.5 oz)', 'Crème de mûre (drizzle)', 'Crushed ice'],
-        'recipe': '1. Add gin, lemon and syrup to shaker with ice\n2. Shake and strain into glass over crushed ice\n3. Drizzle creme de mure on top',
-        'skill': 'intermediate',
-        'type': 'fruity',
-        'potency': 'medium',
-        'mood': ['evening', 'summer'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/5jhd4p1582482382.jpg',
-      },
+      
       {
         'id': '27',
         'name': 'Ramos Gin Fizz',
@@ -345,17 +312,7 @@ class CocktailProvider with ChangeNotifier {
         'mood': ['summer', 'party'],
         'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/squyyq1439907312.jpg',
       },
-      {
-        'id': '29',
-        'name': 'Sex on the Beach',
-        'ingredients': ['Vodka (1.5 oz)', 'Peach schnapps (0.5 oz)', 'Orange juice (2 oz)', 'Cranberry juice (2 oz)'],
-        'recipe': '1. Add all ingredients to shaker with ice\n2. Shake and strain into highball glass over ice\n3. Garnish with orange slice',
-        'skill': 'beginner',
-        'type': 'fruity',
-        'potency': 'medium',
-        'mood': ['party', 'summer'],
-        'imageUrl': 'https://www.thecocktaildb.com/images/media/drink/fi67x01504374956.jpg',
-      },
+      
       {
         'id': '30',
         'name': 'Long Island Iced Tea',
@@ -370,6 +327,114 @@ class CocktailProvider with ChangeNotifier {
     ];
     _filteredCocktails = _cocktails; // Initialize filtered list
     notifyListeners();
+
+    // Kick off background load from TheCocktailDB to add many more drinks
+    // (non-blocking to keep initial UI responsive)
+    if (!skipRemoteLoad) {
+      loadFromCocktailDB();
+    }
+  }
+
+  // Load a large set of cocktails from TheCocktailDB by iterating a-z and 0-9.
+  // Merges results into the local dataset with sensible defaults for custom fields.
+  Future<void> loadFromCocktailDB() async {
+    final letters = 'abcdefghijklmnopqrstuvwxyz0123456789'.split('');
+
+    // Build a fast lookup for existing IDs to avoid duplicates
+    final existingIds = _cocktails.map((c) => c['id']?.toString()).toSet();
+
+    for (final ch in letters) {
+      try {
+        final uri = Uri.parse('https://www.thecocktaildb.com/api/json/v1/1/search.php?f=$ch');
+        final resp = await http.get(uri);
+        if (resp.statusCode != 200) continue;
+        final data = jsonDecode(resp.body) as Map<String, dynamic>;
+        final drinks = data['drinks'] as List<dynamic>?;
+        if (drinks == null) continue;
+
+        for (final d in drinks) {
+          final drink = (d as Map).cast<String, dynamic>();
+          final id = drink['idDrink']?.toString();
+          if (id == null || existingIds.contains(id)) continue;
+
+          final name = drink['strDrink']?.toString() ?? 'Unknown';
+          final imageUrl = drink['strDrinkThumb']?.toString() ?? '';
+          final instructions = drink['strInstructions']?.toString() ?? '';
+          final category = drink['strCategory']?.toString();
+          final alcoholic = drink['strAlcoholic']?.toString();
+
+          final ingredients = <String>[];
+          for (int i = 1; i <= 15; i++) {
+            final ing = drink['strIngredient$i']?.toString();
+            final meas = drink['strMeasure$i']?.toString();
+            if (ing != null && ing.trim().isNotEmpty) {
+              final m = (meas == null || meas.trim().isEmpty) ? '' : ' (${meas.trim()})';
+              ingredients.add('${ing.trim()}$m');
+            }
+          }
+
+          // Map CocktailDB fields into our app's categories with conservative defaults
+          final mappedType = _mapCategoryToType(category);
+          final mappedPotency = (alcoholic != null && alcoholic.toLowerCase().contains('non'))
+              ? 'non-alcoholic'
+              : 'medium';
+
+          final newItem = {
+            'id': id,
+            'name': name,
+            'ingredients': ingredients.isEmpty ? ['See recipe'] : ingredients,
+            'recipe': instructions,
+            'skill': 'beginner',
+            'type': mappedType,
+            'potency': mappedPotency,
+            'mood': ['party'],
+            'imageUrl': imageUrl,
+          };
+
+          _cocktails.add(newItem);
+          existingIds.add(id);
+        }
+
+        // After each batch, refresh filtered view according to current filters
+        if (_hasActiveFilters()) {
+          applyFilters(
+            maxIngredients: _maxIngredients,
+            skill: _skillFilter,
+            type: _typeFilter,
+            potency: _potencyFilter,
+            mood: _moodFilter,
+          );
+        } else {
+          _filteredCocktails = _cocktails;
+          notifyListeners();
+        }
+      } catch (_) {
+        // Ignore errors for individual batches to keep overall load resilient
+        continue;
+      }
+    }
+  }
+
+  String _mapCategoryToType(String? category) {
+    if (category == null) return 'fruity';
+    final c = category.toLowerCase();
+    if (c.contains('milk') || c.contains('shake') || c.contains('cocoa') || c.contains('soft') || c.contains('float')) {
+      return 'sweet';
+    }
+    if (c.contains('beer')) {
+      return 'bitter';
+    }
+    if (c.contains('coffee') || c.contains('tea')) {
+      return 'bitter';
+    }
+    if (c.contains('punch') || c.contains('party')) {
+      return 'fruity';
+    }
+    if (c.contains('shot')) {
+      return 'bitter';
+    }
+    // Default most mixed cocktails to 'fruity' for broader discovery
+    return 'fruity';
   }
 
   void applyFilters({
@@ -456,9 +521,28 @@ class CocktailProvider with ChangeNotifier {
       }
       
       if (availableIngredients != null && availableIngredients.isNotEmpty) {
-        matches &= cocktail['ingredients'].any(
-          (ingredient) => availableIngredients.contains(ingredient.toLowerCase()),
-        );
+        final needles = availableIngredients
+            .where((s) => s.trim().isNotEmpty)
+            .map((s) => s.toLowerCase().trim())
+            .toList();
+
+        bool anyIngredientMatches = false;
+
+        for (final ingRaw in (cocktail['ingredients'] as List)) {
+          final ing = ingRaw.toString().toLowerCase();
+          
+          for (final needle in needles) {
+            // Match if the needle appears as a word/substring in the ingredient
+            // This catches: vodka in "Vodka (2 oz)", lime in "Fresh lime juice", etc.
+            if (ing.contains(needle)) {
+              anyIngredientMatches = true;
+              break;
+            }
+          }
+          if (anyIngredientMatches) break;
+        }
+
+        matches &= anyIngredientMatches;
       }
       
       return matches;
