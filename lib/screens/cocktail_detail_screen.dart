@@ -8,6 +8,7 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:share_plus/share_plus.dart';
 import '../providers/settings_provider.dart';
 import '../utils/measure_utils.dart';
+import '../providers/collections_provider.dart';
 
 class CocktailDetailScreen extends StatefulWidget {
   final Map<String, dynamic> cocktail;
@@ -89,6 +90,11 @@ class _CocktailDetailScreenState extends State<CocktailDetailScreen> {
                     }
                   },
                 ),
+              IconButton(
+                tooltip: 'Save to list',
+                icon: const Icon(Icons.playlist_add),
+                onPressed: () => _showSaveToListSheet(context),
+              ),
               IconButton(
                 tooltip: 'Share',
                 icon: const Icon(Icons.ios_share),
@@ -277,5 +283,78 @@ class _CocktailDetailScreenState extends State<CocktailDetailScreen> {
   String _convertedIngredient(BuildContext context, String ingredientLine) {
     final settings = context.read<SettingsProvider>();
     return MeasureUtils.convertLine(ingredientLine, settings.unitSystem, scale: _scale);
+  }
+
+  Future<void> _showSaveToListSheet(BuildContext context) async {
+    final collections = context.read<CollectionsProvider>();
+    final listNames = collections.listNames;
+    String? selected;
+
+    await showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        final controller = TextEditingController();
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Save "${widget.cocktail['name']}" to…', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 12),
+              if (listNames.isEmpty)
+                const Text('No lists yet. Create one below.'),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    ...listNames.map((name) => RadioListTile<String>(
+                          title: Text(name),
+                          value: name,
+                          groupValue: selected,
+                          onChanged: (v) {
+                            selected = v;
+                            Navigator.of(context).pop();
+                          },
+                        )),
+                    const Divider(),
+                    TextField(
+                      controller: controller,
+                      decoration: const InputDecoration(
+                        labelText: 'Create new list',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.add),
+                      label: const Text('Create and Save'),
+                      onPressed: () async {
+                        final name = controller.text.trim();
+                        if (name.isNotEmpty) {
+                          await collections.createList(name);
+                          selected = collections.listNames.firstWhere((n) => n.toLowerCase().startsWith(name.toLowerCase()));
+                          if (context.mounted) Navigator.of(context).pop();
+                        }
+                      },
+                    )
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (selected != null) {
+      await collections.addToList(selected!, widget.cocktail['id']);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Saved to "$selected"')),
+        );
+      }
+    }
   }
 }

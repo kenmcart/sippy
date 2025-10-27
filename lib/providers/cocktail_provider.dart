@@ -573,4 +573,11 @@ class CocktailProvider with ChangeNotifier {
       return matches;
     }).toList();
   }
+
+  Map<String, dynamic>? getById(String id) {
+    for (final c in _cocktails) {
+      if (c['id']?.toString() == id) return c;
+    }
+    return null;
+  }
 }

@@ -4,6 +4,7 @@ import 'screens/main_screen.dart';
 import 'providers/cocktail_provider.dart';
 import 'providers/favorites_provider.dart';
 import 'providers/settings_provider.dart';
+import 'providers/collections_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,21 +13,26 @@ void main() async {
   await favoritesProvider.init();
   final settingsProvider = SettingsProvider();
   await settingsProvider.init();
+  final collectionsProvider = CollectionsProvider();
+  await collectionsProvider.init();
   
   runApp(MyApp(
     favoritesProvider: favoritesProvider,
     settingsProvider: settingsProvider,
+    collectionsProvider: collectionsProvider,
   ));
 }
 
 class MyApp extends StatelessWidget {
   final FavoritesProvider favoritesProvider;
   final SettingsProvider settingsProvider;
+  final CollectionsProvider collectionsProvider;
   
   const MyApp({
     super.key,
     required this.favoritesProvider,
     required this.settingsProvider,
+    required this.collectionsProvider,
   });
 
   @override
@@ -36,6 +42,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CocktailProvider()),
         ChangeNotifierProvider.value(value: favoritesProvider),
         ChangeNotifierProvider.value(value: settingsProvider),
+        ChangeNotifierProvider.value(value: collectionsProvider),
       ],
       child: Consumer<SettingsProvider>(
         builder: (context, settings, _) {
