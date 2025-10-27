@@ -1,7 +1,7 @@
 class MeasureUtils {
-  // Converts an ingredient line based on unit system ('us' or 'metric').
+  // Converts an ingredient line based on unit system ('us' or 'metric'), with optional scaling.
   // Best-effort parse of measures inside parentheses. If parsing fails, returns original.
-  static String convertLine(String line, String unitSystem) {
+  static String convertLine(String line, String unitSystem, {double scale = 1.0}) {
     // Look for parenthetical measure e.g., "(2 oz)" or "(50ml)" or "1 oz"
     // We'll extract number + unit pairs.
     final regexParen = RegExp(r"\(([^\)]+)\)");
@@ -18,7 +18,7 @@ class MeasureUtils {
 
     if (measure.isEmpty) return line; // nothing to convert
 
-    final converted = _convertMeasure(measure, unitSystem);
+  final converted = _convertMeasure(measure, unitSystem, scale: scale);
     if (converted == null) return line;
 
     if (match != null) {
@@ -30,7 +30,7 @@ class MeasureUtils {
     }
   }
 
-  static String? _convertMeasure(String measure, String system) {
+  static String? _convertMeasure(String measure, String system, {double scale = 1.0}) {
     // Normalize
     String m = measure.toLowerCase().trim();
     m = m.replaceAll(' ', ' ');
@@ -39,7 +39,7 @@ class MeasureUtils {
     final qtyMatch = RegExp(r"(?:(\d+\s+)?(\d+\/\d+)|\d+\.?\d*)").firstMatch(m);
     if (qtyMatch == null) return null;
 
-    double qty = 0;
+  double qty = 0;
     final wholePart = qtyMatch.group(1);
     final fracPart = qtyMatch.group(2);
     if (fracPart != null) {
@@ -53,11 +53,16 @@ class MeasureUtils {
       qty = double.tryParse(qtyMatch.group(0)!.trim()) ?? 0;
     }
 
+    // Apply scaling factor (e.g., 2x, 4x)
+    if (scale != 1.0) {
+      qty *= scale;
+    }
+
     final unitMatch = RegExp(r"(oz|ml|tsp|tbsp)").firstMatch(m);
     if (unitMatch == null) return null;
     final unit = unitMatch.group(1)!;
 
-    if (system == 'metric') {
+  if (system == 'metric') {
       // convert to ml
       double ml;
       switch (unit) {

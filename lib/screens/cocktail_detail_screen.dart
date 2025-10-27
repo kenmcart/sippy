@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/favorites_provider.dart';
@@ -7,13 +9,20 @@ import 'package:share_plus/share_plus.dart';
 import '../providers/settings_provider.dart';
 import '../utils/measure_utils.dart';
 
-class CocktailDetailScreen extends StatelessWidget {
+class CocktailDetailScreen extends StatefulWidget {
   final Map<String, dynamic> cocktail;
 
   const CocktailDetailScreen({
     super.key,
     required this.cocktail,
   });
+
+  @override
+  State<CocktailDetailScreen> createState() => _CocktailDetailScreenState();
+}
+
+class _CocktailDetailScreenState extends State<CocktailDetailScreen> {
+  double _scale = 1.0; // 1x, 2x, 4x servings
 
   Widget _buildChip(BuildContext context, String label) {
     return Container(
@@ -48,12 +57,12 @@ class CocktailDetailScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  cocktail['name'],
+                  widget.cocktail['name'],
                   style: const TextStyle(color: Colors.white),
                 ),
               ),
               background: CachedNetworkImage(
-                imageUrl: cocktail['imageUrl'] ?? '',
+                imageUrl: widget.cocktail['imageUrl'] ?? '',
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
                   color: Colors.grey[200],
@@ -66,6 +75,20 @@ class CocktailDetailScreen extends StatelessWidget {
               ),
             ),
             actions: [
+              if (kIsWeb)
+                IconButton(
+                  tooltip: 'Copy recipe',
+                  icon: const Icon(Icons.copy_all),
+                  onPressed: () async {
+                    final text = _composeShareText(context);
+                    await Clipboard.setData(ClipboardData(text: text));
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Recipe copied to clipboard')),
+                      );
+                    }
+                  },
+                ),
               IconButton(
                 tooltip: 'Share',
                 icon: const Icon(Icons.ios_share),
@@ -76,13 +99,13 @@ class CocktailDetailScreen extends StatelessWidget {
               ),
               Consumer<FavoritesProvider>(
                 builder: (context, favoritesProvider, child) {
-                  final isFavorite = favoritesProvider.isFavorite(cocktail['id']);
+                  final isFavorite = favoritesProvider.isFavorite(widget.cocktail['id']);
                   return IconButton(
                     icon: Icon(
                       isFavorite ? Icons.favorite : Icons.favorite_border,
                       color: isFavorite ? Colors.red : Colors.white,
                     ),
-                    onPressed: () => favoritesProvider.toggleFavorite(cocktail['id']),
+                    onPressed: () => favoritesProvider.toggleFavorite(widget.cocktail['id']),
                   );
                 },
               ),
@@ -97,7 +120,7 @@ class CocktailDetailScreen extends StatelessWidget {
                   Consumer<FavoritesProvider>(
                     builder: (context, favoritesProvider, child) {
                       return RatingBar.builder(
-                        initialRating: favoritesProvider.getRating(cocktail['id']),
+                        initialRating: favoritesProvider.getRating(widget.cocktail['id']),
                         minRating: 0,
                         direction: Axis.horizontal,
                         allowHalfRating: true,
@@ -108,12 +131,35 @@ class CocktailDetailScreen extends StatelessWidget {
                           color: Colors.amber,
                         ),
                         onRatingUpdate: (rating) {
-                          favoritesProvider.rateCocktail(cocktail['id'], rating);
+                          favoritesProvider.rateCocktail(widget.cocktail['id'], rating);
                         },
                       );
                     },
                   ),
                   const SizedBox(height: 24),
+                  // Batch calculator control
+                  Row(
+                    children: [
+                      Text('Servings:', style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(width: 12),
+                      SegmentedButton<double>(
+                        segments: const [
+                          ButtonSegment(value: 1.0, label: Text('1x')),
+                          ButtonSegment(value: 2.0, label: Text('2x')),
+                          ButtonSegment(value: 4.0, label: Text('4x')),
+                        ],
+                        selected: {_scale},
+                        onSelectionChanged: (selection) {
+                          if (selection.isNotEmpty) {
+                            setState(() {
+                              _scale = selection.first;
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -136,7 +182,7 @@ class CocktailDetailScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         ...List<Widget>.from(
-                          (cocktail['ingredients'] as List).map(
+                          (widget.cocktail['ingredients'] as List).map(
                             (ingredient) => Padding(
                               padding: const EdgeInsets.symmetric(vertical: 4),
                               child: Row(
@@ -162,11 +208,11 @@ class CocktailDetailScreen extends StatelessWidget {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _buildChip(context, 'Skill: ${cocktail['skill']}'),
-                      _buildChip(context, 'Type: ${cocktail['type']}'),
-                      _buildChip(context, 'Potency: ${cocktail['potency']}'),
+                      _buildChip(context, 'Skill: ${widget.cocktail['skill']}'),
+                      _buildChip(context, 'Type: ${widget.cocktail['type']}'),
+                      _buildChip(context, 'Potency: ${widget.cocktail['potency']}'),
                       ...List<Widget>.from(
-                        (cocktail['mood'] as List).map(
+                        (widget.cocktail['mood'] as List).map(
                           (mood) => _buildChip(context, mood),
                         ),
                       ),
@@ -195,7 +241,7 @@ class CocktailDetailScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          cocktail['recipe'],
+                          widget.cocktail['recipe'],
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
                       ],
@@ -211,18 +257,18 @@ class CocktailDetailScreen extends StatelessWidget {
   }
 
   String _composeShareText(BuildContext context) {
-    final ingredients = (cocktail['ingredients'] as List)
+    final ingredients = (widget.cocktail['ingredients'] as List)
         .map((e) => '- ${_convertedIngredient(context, e.toString())}')
         .join('\n');
 
     final sb = StringBuffer();
-    sb.writeln('${cocktail['name']}');
+    sb.writeln('${widget.cocktail['name']}');
     sb.writeln('');
     sb.writeln('Ingredients:');
     sb.writeln(ingredients);
     sb.writeln('');
     sb.writeln('Recipe:');
-    sb.writeln(cocktail['recipe']);
+    sb.writeln(widget.cocktail['recipe']);
     sb.writeln('');
     sb.writeln('Shared from Sippy');
     return sb.toString();
@@ -230,6 +276,6 @@ class CocktailDetailScreen extends StatelessWidget {
 
   String _convertedIngredient(BuildContext context, String ingredientLine) {
     final settings = context.read<SettingsProvider>();
-    return MeasureUtils.convertLine(ingredientLine, settings.unitSystem);
+    return MeasureUtils.convertLine(ingredientLine, settings.unitSystem, scale: _scale);
   }
 }
