@@ -21,10 +21,23 @@ class CocktailProvider with ChangeNotifier {
 
   // Flag to skip remote loading (useful for testing)
   final bool skipRemoteLoad;
+  
+  // Age restriction flag
+  bool _showOnlyNonAlcoholic = false;
 
   CocktailProvider({this.skipRemoteLoad = false});
 
-  List<Map<String, dynamic>> get cocktails => _filteredCocktails.isEmpty && !_hasActiveFilters() ? _cocktails : _filteredCocktails;
+  List<Map<String, dynamic>> get cocktails {
+    var result = _filteredCocktails.isEmpty && !_hasActiveFilters() ? _cocktails : _filteredCocktails;
+    
+    // Apply age restriction filter
+    if (_showOnlyNonAlcoholic) {
+      result = result.where((c) => c['potency'] == 'non-alcoholic').toList();
+    }
+    
+    return result;
+  }
+  
   Map<String, List<String>> get categories => _categories;
   
   // Getters for current filter state
@@ -33,6 +46,11 @@ class CocktailProvider with ChangeNotifier {
   String? get typeFilter => _typeFilter;
   String? get potencyFilter => _potencyFilter;
   String? get moodFilter => _moodFilter;
+  
+  void setAgeRestriction(bool showOnlyNonAlcoholic) {
+    _showOnlyNonAlcoholic = showOnlyNonAlcoholic;
+    notifyListeners();
+  }
 
   bool _hasActiveFilters() {
     return _maxIngredients != null ||

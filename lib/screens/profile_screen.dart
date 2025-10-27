@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'dart:typed_data';
 import '../providers/favorites_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/cocktail_provider.dart';
@@ -14,6 +18,8 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final _nameController = TextEditingController();
+  final _imagePicker = ImagePicker();
+  Uint8List? _webImageBytes; // For web platform
 
   @override
   void initState() {
@@ -35,6 +41,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return (parts.first[0] + parts.last[0]).toUpperCase();
   }
 
+  Future<void> _pickImage(SettingsProvider settings) async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
+      
+      if (image != null) {
+        if (kIsWeb) {
+          // For web, read bytes and store them
+          final bytes = await image.readAsBytes();
+          setState(() {
+            _webImageBytes = bytes;
+          });
+          await settings.setProfilePicture(image.path);
+        } else {
+          // For mobile, just store the path
+          await settings.setProfilePicture(image.path);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking image: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _removeImage(SettingsProvider settings) async {
+    setState(() {
+      _webImageBytes = null;
+    });
+    await settings.setProfilePicture(null);
+  }
+
+  ImageProvider? _getImageProvider(String? path) {
+    if (path == null) return null;
+    
+    if (kIsWeb) {
+      // On web, use the cached bytes
+      return _webImageBytes != null ? MemoryImage(_webImageBytes!) : null;
+    } else {
+      // On mobile, use file path
+      return FileImage(File(path));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -52,12 +108,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Row(
                   children: [
-                    CircleAvatar(
-                      radius: 32,
-                      child: Text(
-                        _initials(settings.displayName),
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
+                    Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 48,
+                          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                          backgroundImage: _getImageProvider(settings.profilePicturePath),
+                          child: _getImageProvider(settings.profilePicturePath) == null
+                              ? Text(
+                                  _initials(settings.displayName),
+                                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                                )
+                              : null,
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.surface,
+                                width: 2,
+                              ),
+                            ),
+                            child: PopupMenuButton<String>(
+                              icon: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
+                              iconSize: 18,
+                              padding: EdgeInsets.zero,
+                              tooltip: 'Change picture',
+                              onSelected: (value) {
+                                if (value == 'pick') {
+                                  _pickImage(settings);
+                                } else if (value == 'remove') {
+                                  _removeImage(settings);
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'pick',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.photo_library),
+                                      SizedBox(width: 8),
+                                      Text('Choose photo'),
+                                    ],
+                                  ),
+                                ),
+                                if (settings.profilePicturePath != null)
+                                  const PopupMenuItem(
+                                    value: 'remove',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.delete),
+                                        SizedBox(width: 8),
+                                        Text('Remove photo'),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -115,24 +229,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    const Text('Drink type'),
-                    const SizedBox(width: 12),
-                    DropdownButton<String>(
-                      value: settings.preferredType,
-                      items: const [
-                        DropdownMenuItem(value: 'Any', child: Text('Any')),
-                        DropdownMenuItem(value: 'Alcoholic', child: Text('Alcoholic')),
-                        DropdownMenuItem(value: 'Non-alcoholic', child: Text('Non-alcoholic')),
-                      ],
-                      onChanged: (v) {
-                        if (v != null) settings.setPreferredType(v);
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
                     const Text('Max ingredients'),
                     Expanded(
                       child: Slider(
@@ -143,6 +239,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         label: settings.maxIngredients.toString(),
                         onChanged: (v) => settings.setMaxIngredients(v.toInt()),
                       ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Text('Units'),
+                    const SizedBox(width: 12),
+                    SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment(value: 'us', label: Text('US (oz)'), icon: Icon(Icons.straighten)),
+                        ButtonSegment(value: 'metric', label: Text('Metric (ml)'), icon: Icon(Icons.straighten)),
+                      ],
+                      selected: {settings.unitSystem},
+                      onSelectionChanged: (sel) => settings.setUnitSystem(sel.first),
                     ),
                   ],
                 ),
@@ -181,24 +292,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             },
                       icon: const Icon(Icons.star_border),
                       label: const Text('Clear ratings'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () async {
-                        final favIds = favorites.favorites;
-                        final names = cocktails.cocktails
-                            .where((c) => favIds.contains(c['id']))
-                            .map((c) => c['name'] as String)
-                            .toList();
-                        final text = names.isEmpty ? 'No favorites yet' : names.join(', ');
-                        await Clipboard.setData(ClipboardData(text: text));
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Favorites copied to clipboard')),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.copy),
-                      label: const Text('Export favorites'),
                     ),
                   ],
                 ),

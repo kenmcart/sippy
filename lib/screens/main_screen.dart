@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/settings_provider.dart';
+import '../providers/cocktail_provider.dart';
+import '../widgets/age_verification_dialog.dart';
+import 'onboarding_screen.dart';
 import 'home_screen.dart';
 import 'favorites_screen.dart';
 import 'search_screen.dart';
@@ -18,6 +23,51 @@ class _MainScreenState extends State<MainScreen> {
     const SearchScreen(),
     const FavoritesScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Show age verification dialog after first frame if needed
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAgeVerification();
+    });
+  }
+
+  Future<void> _checkAgeVerification() async {
+    final settings = context.read<SettingsProvider>();
+    
+    if (settings.needsAgeVerification) {
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AgeVerificationDialog(
+          onOver21: () async {
+            await settings.setAgeVerification(true);
+            context.read<CocktailProvider>().setAgeRestriction(false);
+            if (mounted) Navigator.of(context).pop();
+          },
+          onUnder21: () async {
+            await settings.setAgeVerification(false);
+            context.read<CocktailProvider>().setAgeRestriction(true);
+            if (mounted) Navigator.of(context).pop();
+          },
+        ),
+      );
+    } else {
+      // Apply existing age restriction
+      context.read<CocktailProvider>().setAgeRestriction(settings.isOver21 == false);
+    }
+
+    // After age check, show onboarding if not seen
+    if (!settings.seenOnboarding) {
+      final completed = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+      );
+      if (completed == true) {
+        await settings.setSeenOnboarding(true);
+      }
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {

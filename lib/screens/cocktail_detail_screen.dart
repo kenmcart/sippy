@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/favorites_provider.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:share_plus/share_plus.dart';
+import '../providers/settings_provider.dart';
+import '../utils/measure_utils.dart';
 
 class CocktailDetailScreen extends StatelessWidget {
   final Map<String, dynamic> cocktail;
@@ -63,6 +66,14 @@ class CocktailDetailScreen extends StatelessWidget {
               ),
             ),
             actions: [
+              IconButton(
+                tooltip: 'Share',
+                icon: const Icon(Icons.ios_share),
+                onPressed: () {
+                  final text = _composeShareText(context);
+                  Share.share(text);
+                },
+              ),
               Consumer<FavoritesProvider>(
                 builder: (context, favoritesProvider, child) {
                   final isFavorite = favoritesProvider.isFavorite(cocktail['id']);
@@ -134,7 +145,7 @@ class CocktailDetailScreen extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      ingredient,
+                                      _convertedIngredient(context, ingredient.toString()),
                                       style: Theme.of(context).textTheme.bodyLarge,
                                     ),
                                   ),
@@ -197,5 +208,28 @@ class CocktailDetailScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _composeShareText(BuildContext context) {
+    final ingredients = (cocktail['ingredients'] as List)
+        .map((e) => '- ${_convertedIngredient(context, e.toString())}')
+        .join('\n');
+
+    final sb = StringBuffer();
+    sb.writeln('${cocktail['name']}');
+    sb.writeln('');
+    sb.writeln('Ingredients:');
+    sb.writeln(ingredients);
+    sb.writeln('');
+    sb.writeln('Recipe:');
+    sb.writeln(cocktail['recipe']);
+    sb.writeln('');
+    sb.writeln('Shared from Sippy');
+    return sb.toString();
+  }
+
+  String _convertedIngredient(BuildContext context, String ingredientLine) {
+    final settings = context.read<SettingsProvider>();
+    return MeasureUtils.convertLine(ingredientLine, settings.unitSystem);
   }
 }

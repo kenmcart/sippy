@@ -4,10 +4,12 @@ import '../screens/cocktail_detail_screen.dart';
 
 class CocktailCard extends StatelessWidget {
   final Map<String, dynamic> cocktail;
+  final double? showRating; // Optional: display this rating on the card
 
   const CocktailCard({
     super.key,
     required this.cocktail,
+    this.showRating,
   });
 
   @override
@@ -47,6 +49,46 @@ class CocktailCard extends StatelessWidget {
                       child: const Icon(Icons.local_bar, size: 50),
                     ),
                   ),
+                  // Rating badge (top-left if provided)
+                  if (showRating != null && showRating! > 0)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withOpacity(0.95),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.star,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              showRating!.toStringAsFixed(1),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  // Potency badge (top-right)
                   Positioned(
                     top: 8,
                     right: 8,

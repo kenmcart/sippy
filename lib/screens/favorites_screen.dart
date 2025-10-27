@@ -70,7 +70,12 @@ class FavoritesScreen extends StatelessWidget {
                   ),
                   itemCount: rated.length,
                   itemBuilder: (context, index) {
-                    return CocktailCard(cocktail: rated[index]);
+                    final cocktail = rated[index];
+                    final rating = favoritesProvider.getRating(cocktail['id']);
+                    return CocktailCard(
+                      cocktail: cocktail,
+                      showRating: rating,
+                    );
                   },
                 ),
               ],
