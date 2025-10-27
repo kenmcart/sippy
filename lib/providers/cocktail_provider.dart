@@ -496,6 +496,7 @@ class CocktailProvider with ChangeNotifier {
     String? potency,
     String? mood,
     List<String>? availableIngredients,
+    String? searchName,
   }) {
     return _cocktails.where((cocktail) {
       bool matches = true;
@@ -518,6 +519,12 @@ class CocktailProvider with ChangeNotifier {
       
       if (mood != null) {
         matches &= cocktail['mood'].contains(mood);
+      }
+      
+      if (searchName != null && searchName.trim().isNotEmpty) {
+        final name = cocktail['name']?.toString().toLowerCase() ?? '';
+        final query = searchName.toLowerCase().trim();
+        matches &= name.contains(query);
       }
       
       if (availableIngredients != null && availableIngredients.isNotEmpty) {
