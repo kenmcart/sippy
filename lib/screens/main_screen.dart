@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/cocktail_provider.dart';
 import '../widgets/age_verification_dialog.dart';
-import 'onboarding_screen.dart';
 import 'home_screen.dart';
 import 'favorites_screen.dart';
 import 'search_screen.dart';
@@ -56,16 +55,6 @@ class _MainScreenState extends State<MainScreen> {
     } else {
       // Apply existing age restriction
       context.read<CocktailProvider>().setAgeRestriction(settings.isOver21 == false);
-    }
-
-    // After age check, show onboarding if not seen
-    if (!settings.seenOnboarding) {
-      final completed = await Navigator.of(context).push<bool>(
-        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-      );
-      if (completed == true) {
-        await settings.setSeenOnboarding(true);
-      }
     }
   }
 

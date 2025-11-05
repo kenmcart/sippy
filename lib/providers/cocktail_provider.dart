@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 class CocktailProvider with ChangeNotifier {
   List<Map<String, dynamic>> _cocktails = [];
   List<Map<String, dynamic>> _filteredCocktails = [];
-  Map<String, List<String>> _categories = {
+  final Map<String, List<String>> _categories = {
     'skill': ['beginner', 'intermediate', 'expert'],
     'type': ['fruity', 'tart', 'sweet', 'bitter', 'savory'],
     'potency': ['non-alcoholic', 'light', 'medium', 'strong'],
@@ -579,5 +579,12 @@ class CocktailProvider with ChangeNotifier {
       if (c['id']?.toString() == id) return c;
     }
     return null;
+  }
+
+  Map<String, dynamic>? getRandomCocktail() {
+    final available = cocktails; // respects age restriction and filters
+    if (available.isEmpty) return null;
+    final randomIndex = DateTime.now().millisecondsSinceEpoch % available.length;
+    return available[randomIndex];
   }
 }

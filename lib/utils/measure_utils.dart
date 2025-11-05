@@ -81,7 +81,7 @@ class MeasureUtils {
         default:
           return null;
       }
-      return _formatNumber(ml) + ' ml';
+      return '${_formatNumber(ml)} ml';
     } else {
       // convert to US (oz)
       double oz;
@@ -101,7 +101,7 @@ class MeasureUtils {
         default:
           return null;
       }
-      return _formatNumber(oz) + ' oz';
+      return '${_formatNumber(oz)} oz';
     }
   }
 

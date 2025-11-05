@@ -4,6 +4,8 @@ import '../providers/cocktail_provider.dart';
 import '../widgets/cocktail_card.dart';
 import '../widgets/filter_drawer.dart';
 import 'profile_screen.dart';
+import 'cocktail_detail_screen.dart';
+import 'recommendation_quiz_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -46,18 +48,67 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           endDrawer: const FilterDrawer(),
-          body: GridView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 0.68,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: cocktails.length,
-            itemBuilder: (context, index) {
-              return CocktailCard(cocktail: cocktails[index]);
-            },
+          body: Column(
+            children: [
+              // Action buttons
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: () {
+                          final random = cocktailProvider.getRandomCocktail();
+                          if (random != null) {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => CocktailDetailScreen(cocktail: random),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('No cocktails available')),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.shuffle),
+                        label: const Text('Random Drink'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const RecommendationQuizScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.lightbulb_outline),
+                        label: const Text('Find My Drink'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Grid
+              Expanded(
+                child: GridView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.68,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: cocktails.length,
+                  itemBuilder: (context, index) {
+                    return CocktailCard(cocktail: cocktails[index]);
+                  },
+                ),
+              ),
+            ],
           ),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
