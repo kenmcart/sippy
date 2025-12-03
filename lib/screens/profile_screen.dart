@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'dart:typed_data';
 import '../providers/favorites_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/cocktail_provider.dart';

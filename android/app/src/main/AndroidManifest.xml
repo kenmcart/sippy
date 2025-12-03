@@ -2,7 +2,7 @@
     <!-- Needed for loading cocktail images and API calls in release builds -->
     <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="counterproject"
+        android:label="Sippy"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
