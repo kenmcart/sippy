@@ -7,6 +7,7 @@ import 'dart:io';
 import '../providers/favorites_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/cocktail_provider.dart';
+import '../providers/auth_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -293,6 +294,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       label: const Text('Clear ratings'),
                     ),
                   ],
+                ),
+                const SizedBox(height: 24),
+                Consumer<AuthProvider>(
+                  builder: (context, authProvider, _) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (authProvider.userEmail != null) ...[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.email_outlined,
+                                  size: 20,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    authProvider.userEmail!,
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        OutlinedButton.icon(
+                          onPressed: () async {
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Sign Out'),
+                                content: const Text('Are you sure you want to sign out?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).pop(false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () => Navigator.of(context).pop(true),
+                                    child: const Text('Sign Out'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            
+                            if (confirmed == true && mounted) {
+                              await authProvider.signOut();
+                            }
+                          },
+                          icon: const Icon(Icons.logout),
+                          label: const Text('Sign Out'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 24),
