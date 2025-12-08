@@ -14,7 +14,7 @@ class FirebaseStatusWidget extends StatelessWidget {
           return const CircularProgressIndicator();
         }
 
-        final status = snapshot.data as Map<String, dynamic>? ?? {};
+        final status = snapshot.data ?? {};
         final isInitialized = status['initialized'] ?? false;
         final error = status['error'];
         final appsCount = status['appsCount'] ?? 0;

@@ -20,10 +20,7 @@ void main() async {
   try {
     final options = DefaultFirebaseOptions.currentPlatform;
     debugPrint('🔍 Platform: ${kIsWeb ? "Web" : defaultTargetPlatform}');
-    debugPrint('🔍 Options: ${options != null ? "Found" : "NULL!"}');
-    if (options == null) {
-      throw Exception('FirebaseOptions is null! Check firebase_options.dart');
-    }
+    debugPrint('🔍 Options: ${"Found"}');
     debugPrint('🔍 API Key: ${options.apiKey}');
     debugPrint('🔍 Project ID: ${options.projectId}');
     
