@@ -164,7 +164,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Sign in to continue',
+                      'Your pocket bartender: find personalized cocktails',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
@@ -284,6 +284,14 @@ class _LoginScreenState extends State<LoginScreen> {
                             );
                           },
                           child: const Text('Sign Up'),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Email our team at sippytenders@umich.edu for questions",
                         ),
                       ],
                     ),
